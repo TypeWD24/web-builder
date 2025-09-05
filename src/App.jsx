@@ -49,14 +49,12 @@ export default function App() {
   };
 
   const handleDelete = (index) => {
-    //delete textBox by index
     setTextBoxes((prev) => prev.filter((_, i) => i !== index));
     if (selectedBox === index) setSelectedBox(null);
     setShowEditor(false);
   };
 
   const handleChange = (index, value) => {
-    //update text by index
     setTextBoxes((prev) =>
       prev.map((box, i) => (i === index ? { ...box, text: value } : box))
     );
