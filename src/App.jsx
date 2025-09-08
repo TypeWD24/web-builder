@@ -1,7 +1,15 @@
 import { gsap } from "gsap";
 import { Draggable } from "gsap/Draggable";
-import { Edit3, RotateCw, Trash2 } from "lucide-react";
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Edit3,
+  RotateCw,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import "./index.css";
 
 gsap.registerPlugin(Draggable);
 
@@ -37,20 +45,26 @@ export default function App() {
 
     const newBox = {
       text: "Double click to edit",
+      id: Date.now(),
       color: "#000000",
       size: 16,
       bold: false,
       x: startX,
       y: startY,
       rotation: 0,
+      align: "left",
+      font: "Arial",
+      fontStyle: "normal",
     };
 
     setTextBoxes((prev) => [...prev, newBox]);
   };
 
-  const handleDelete = (index) => {
-    setTextBoxes((prev) => prev.filter((_, i) => i !== index));
-    if (selectedBox === index) setSelectedBox(null);
+  const handleDelete = (id) => {
+    setTextBoxes((prev) => prev.filter((box) => box.id !== id));
+    if (selectedBox === id) setSelectedBox(null);
+    console.log("delte : ");
+    
     setShowEditor(false);
   };
 
@@ -78,6 +92,21 @@ export default function App() {
     setEditingBox(null);
   };
 
+  // const handleExport = () => {
+  //   if (!containerRef.current) return;
+
+  //   toPng(containerRef.current, { cacheBust: true })
+  //     .then((dataUrl) => {
+  //       const link = document.createElement("a");
+  //       link.download = "exported-image.png";
+  //       link.href = dataUrl;
+  //       link.click();
+  //     })
+  //     .catch((err) => {
+  //       console.error("Export failed", err);
+  //     });
+  // };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -93,6 +122,7 @@ export default function App() {
   }, []);
 
   console.log("text ", textBoxes);
+  console.log("selcteBox : ", selectedBox);
 
   return (
     <div className="h-screen grid grid-cols-12">
@@ -127,14 +157,16 @@ export default function App() {
         ))}
 
         {showEditor && selectedBox !== null && (
-          <div
-            className="editor-popup absolute top-20 left-20 bg-white p-4 border shadow-lg rounded-lg z-50"
-            style={{ minWidth: "250px" }}
-          >
-            <h3 className="font-bold mb-3 text-gray-700">Edit Text Style</h3>
-            <div className="flex flex-col space-y-3">
+          <div className="editor-popup absolute top-20 left-20 bg-white p-6 border border-gray-200 shadow-xl rounded-xl z-50 w-72">
+            <h3 className="font-bold mb-4 text-gray-700 text-lg">
+              Edit Text Style
+            </h3>
+
+            <div className="flex flex-col space-y-4">
               <label className="flex items-center justify-between">
-                <span className="text-sm font-medium">Color:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Color:
+                </span>
                 <input
                   type="color"
                   value={textBoxes[selectedBox].color}
@@ -143,23 +175,45 @@ export default function App() {
                 />
               </label>
               <label className="flex items-center justify-between">
-                <span className="text-sm font-medium">Size:</span>
-                <select
-                  value={textBoxes[selectedBox].size}
-                  onChange={(e) =>
-                    handleStyleChange("size", parseInt(e.target.value))
-                  }
-                  className="px-2 py-1 border rounded"
-                >
-                  {[12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48].map((s) => (
-                    <option key={s} value={s}>
-                      {s}px
-                    </option>
-                  ))}
-                </select>
+                <span className="text-sm font-medium text-gray-600">Size:</span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleStyleChange(
+                        "size",
+                        Math.max(1, textBoxes[selectedBox].size - 1)
+                      )
+                    }
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded"
+                  >
+                    -
+                  </button>
+
+                  <input
+                    type="number"
+                    value={textBoxes[selectedBox].size}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      handleStyleChange("size", value);
+                    }}
+                    className="w-16 text-center border rounded px-2 py-1"
+                    min={1}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleStyleChange("size", textBoxes[selectedBox].size + 1)
+                    }
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded"
+                  >
+                    +
+                  </button>
+                </div>
               </label>
               <label className="flex items-center justify-between">
-                <span className="text-sm font-medium">Bold:</span>
+                <span className="text-sm font-medium text-gray-600">Bold:</span>
                 <input
                   type="checkbox"
                   checked={textBoxes[selectedBox].bold}
@@ -167,9 +221,106 @@ export default function App() {
                   className="w-4 h-4"
                 />
               </label>
+              <label className="flex items-center justify-between">
+                <span className="text-sm font-medium  text-gray-600">
+                  Italic:
+                </span>
+                <input
+                  type="checkbox"
+                  checked={textBoxes[selectedBox].italic || false}
+                  onChange={(e) =>
+                    handleStyleChange("italic", e.target.checked)
+                  }
+                  className="w-4 h-4"
+                />
+              </label>
+
+              <label className="flex items-center justify-between">
+                <span className="text-sm font-medium  text-gray-600">
+                  Underline:
+                </span>
+                <input
+                  type="checkbox"
+                  checked={textBoxes[selectedBox].textDecoration || false}
+                  onChange={(e) =>
+                    handleStyleChange("textDecoration", e.target.checked)
+                  }
+                  className="w-4 h-4"
+                />
+              </label>
+
+              {/* <button
+                onClick={handleExport}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+              >
+                Export as PNG
+              </button> */}
+
+              <label className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-600">Font:</span>
+                <select
+                  value={textBoxes[selectedBox].font || "Arial"}
+                  onChange={(e) => handleStyleChange("font", e.target.value)}
+                  className="px-2 py-1 border rounded w-36"
+                >
+                  {[
+                    "Arial",
+                    "Helvetica",
+                    "Times New Roman",
+                    "Georgia",
+                    "Courier New",
+                    "Verdana",
+                    "Tahoma",
+                    "Trebuchet MS",
+                    "Impact",
+                  ].map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-600 mb-2">
+                  Align:
+                </span>
+                <div className="flex justify-between space-x-2">
+                  <button
+                    onClick={() => handleStyleChange("align", "left")}
+                    className={`flex items-center justify-center flex-1 p-2 rounded border ${
+                      textBoxes[selectedBox].align === "left"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700"
+                    }`}
+                  >
+                    <AlignLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleStyleChange("align", "center")}
+                    className={`flex items-center justify-center flex-1 p-2 rounded border ${
+                      textBoxes[selectedBox].align === "center"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700"
+                    }`}
+                  >
+                    <AlignCenter size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleStyleChange("align", "right")}
+                    className={`flex items-center justify-center flex-1 p-2 rounded border ${
+                      textBoxes[selectedBox].align === "right"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700"
+                    }`}
+                  >
+                    <AlignRight size={18} />
+                  </button>
+                </div>
+              </div>
+
               <button
                 onClick={() => setShowEditor(false)}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded mt-3 transition-colors"
+                className="mt-4 w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 Close
               </button>
@@ -178,31 +329,35 @@ export default function App() {
         )}
       </div>
 
-      <div className="col-span-3 bg-white flex flex-col items-center justify-start pt-4">
-        <button
-          onClick={addTextBox}
-          className="py-2.5 px-5 mb-4 text-sm font-medium text-gray-900
+      <div className="col-span-3 bg-white flex flex-col justify-start pt-4 px-0">
+        <div className=" flex justify-center items-center">
+          <button
+            onClick={addTextBox}
+            className="py-2.5 px-5 mb-4 text-sm font-medium text-gray-900
             bg-white rounded-full border border-gray-300
             hover:bg-gray-100 hover:text-blue-700
             focus:outline-none focus:ring-2 focus:ring-blue-300
-            transition-colors"
-        >
-          Add Textbox
-        </button>
+            transition-colors w-50"
+          >
+            Add Textbox
+          </button>
+        </div>
 
-        <div className="text-xs text-gray-600 px-4 text-start">
-          <p className="mb-2">
-            🖱️ <strong>Click</strong> to select
-          </p>
-          <p className="mb-2">
-            🖱️ <strong>Double-click</strong> to edit text
-          </p>
-          <p className="mb-2">
-            🎯 <strong>Drag</strong> to move
-          </p>
-          <p>
-            🔄 <strong>Green button</strong> to rotate
-          </p>
+        <div className="border-gray-400 border-b-1">
+          <div className="text-xs text-gray-600 px-4 text-start mb-4">
+            <p className="mb-2">
+              🖱️ <strong>Click</strong> to select
+            </p>
+            <p className="mb-2">
+              🖱️ <strong>Double-click</strong> to edit text
+            </p>
+            <p className="mb-2">
+              🎯 <strong>Drag</strong> to move
+            </p>
+            <p>
+              🔄 <strong>Green button</strong> to rotate
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -267,8 +422,6 @@ const DraggableBox = ({
     const rotateButton = element.querySelector(".rotate-btn");
     let rotateDraggable = null;
     if (rotateButton) {
-      console.log(" rotateButton", rotateButton);
-
       rotateDraggable = Draggable.create(element, {
         type: "rotation",
         trigger: rotateButton,
@@ -311,7 +464,12 @@ const DraggableBox = ({
         x: box.x,
         y: box.y,
         rotation: box.rotation,
-        transformOrigin: "center center",
+        transformOrigin:
+          box.align === "left"
+            ? "left center"
+            : box.align === "right"
+            ? "right center"
+            : "center center",
         cursor: editingBox === index ? "text" : "move",
         zIndex: selectedBox === index ? 20 : 10,
       }}
@@ -337,7 +495,8 @@ const DraggableBox = ({
             fontSize: `${box.size}px`,
             fontWeight: box.bold ? "bold" : "normal",
             color: box.color,
-            minWidth: "100px",
+            minWidth: "200px",
+            border: "none",
           }}
           onMouseDown={(e) => e.stopPropagation()}
         />
@@ -348,8 +507,13 @@ const DraggableBox = ({
             fontWeight: box.bold ? "bold" : "normal",
             color: box.color,
             display: "block",
-            minWidth: "100px",
+            minWidth: "200px",
             padding: "2px",
+            textAlign: box.align,
+            fontFamily: box.font || "Arial",
+            border: "none",
+            fontStyle: box.italic ? "italic" : "normal",
+            textDecoration: box.textDecoration ? "underline" : "",
           }}
         >
           {box.text}
@@ -373,7 +537,7 @@ const DraggableBox = ({
                 scale: 0,
                 duration: 0.2,
                 onComplete: () => {
-                  handleDelete(index);
+                  handleDelete(box.id);
                 },
               });
             }}
