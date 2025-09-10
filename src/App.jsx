@@ -190,6 +190,7 @@ export default function App() {
               handleSelectBox={(idx) => setSelectedBox(idx)}
               setTextBoxes={setTextBoxes}
               setShowEditor={setShowEditor}
+              vw={vw}
             />
           ))}
         </div>
@@ -400,7 +401,6 @@ export default function App() {
     </div>
   );
 }
-
 const DraggableBox = ({
   index,
   box,
@@ -418,81 +418,66 @@ const DraggableBox = ({
   const boxRef = useRef(null);
 
   useEffect(() => {
-    const element = boxRef.current;
-    if (!element) return;
+    const el = boxRef.current;
+    if (!el) return;
 
-    const imageArea = containerRef.current.querySelector("img");
-    const bounds = imageArea ? imageArea : containerRef.current;
+    const imgOrContainer =
+      containerRef.current.querySelector("img") || containerRef.current;
 
-    const mainDraggable = Draggable.create(element, {
+    const main = Draggable.create(el, {
       type: "x,y",
-      bounds: bounds,
+      bounds: imgOrContainer,
       cursor: editingBox === index ? "text" : "move",
-      onPress: function (e) {
+      onPress: (e) => {
         handleSelectBox(index);
         e.stopPropagation();
+        gsap.set(el, { x: 0, y: 0 });
       },
       onDragStart: function () {
-        gsap.to(this.target, {
+        gsap.to(el, {
           scale: 1.05,
           boxShadow: "0 8px 16px rgba(0,0,0,0.3)",
           duration: 0.2,
         });
       },
-      // onDragEnd: function () {
-      //   gsap.to(this.target, {
-      //     scale: 1,
-      //     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-      //     duration: 0.2,
-      //   });
-      //   const finalX = this.x;
-      //   const finalY = this.y;
-      //   setTextBoxes((prev) =>
-      //     prev.map((b, i) => (i === index ? { ...b, x: finalX, y: finalY } : b))
-      //   );
-      // },
       onDragEnd: function () {
-        gsap.to(this.target, {
+        gsap.to(el, {
           scale: 1,
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
           duration: 0.2,
         });
-        const container = containerRef.current;
-        const boundsEl = container.querySelector("img") || container;
-        const c = container.getBoundingClientRect();
-        const b = boundsEl.getBoundingClientRect();
-        const left = b.left - c.left;
-        const top = b.top - c.top;
 
-        const xPx = this.x;
-        const yPx = this.y;
+        const br = el.getBoundingClientRect();
+        const boundRect = imgOrContainer.getBoundingClientRect();
 
-        const xPercent = (xPx - left) / b.width;
-        const yPercent = (yPx - top) / b.height;
+        const centerX = br.left - boundRect.left + br.width / 2;
+        const centerY = br.top - boundRect.top + br.height / 2;
+        let xPercent = centerX / boundRect.width;
+        let yPercent = centerY / boundRect.height;
+        xPercent = Math.min(Math.max(xPercent, 0), 1);
+        yPercent = Math.min(Math.max(yPercent, 0), 1);
 
         setTextBoxes((prev) =>
-          prev.map((box, i) =>
-            i === index ? { ...box, xPercent, yPercent, x: xPx, y: yPx } : box
-          )
+          prev.map((b, i) => (i === index ? { ...b, xPercent, yPercent } : b))
         );
+        gsap.set(el, { x: 0, y: 0 });
       },
-      onClick: (e) => {
-        e.stopPropagation();
-      },
+      onClick: (e) => e.stopPropagation(),
     })[0];
 
-    const rotateButton = element.querySelector(".rotate-btn");
-    let rotateDraggable = null;
-    if (rotateButton) {
-      rotateDraggable = Draggable.create(element, {
+    const rotateBtn = el.querySelector(".rotate-btn");
+    let rot = null;
+    if (rotateBtn) {
+      rot = Draggable.create(el, {
         type: "rotation",
-        trigger: rotateButton,
+        trigger: rotateBtn,
         onPress: (e) => {
           e.stopPropagation();
-          gsap.to(element, { scale: 1.1, duration: 0.2 });
+          gsap.set(el, { x: 0, y: 0 });
+          gsap.to(el, { scale: 1.1, duration: 0.2 });
         },
         onRelease: function () {
-          gsap.to(element, { scale: 1, duration: 0.2 });
+          gsap.to(el, { scale: 1, duration: 0.2 });
           setTextBoxes((prev) =>
             prev.map((b, i) =>
               i === index ? { ...b, rotation: this.rotation } : b
@@ -502,40 +487,29 @@ const DraggableBox = ({
       })[0];
     }
 
-    if (editingBox === index) {
-      mainDraggable.disable();
-    } else {
-      mainDraggable.enable();
-    }
+    if (editingBox === index) main.disable();
+    else main.enable();
 
     return () => {
-      mainDraggable.kill();
-      if (rotateDraggable) rotateDraggable.kill();
+      main.kill();
+      if (rot) rot.kill();
     };
-  }, [box, index, editingBox, setTextBoxes]);
-
-  console.log("Box", box);
+  }, [index, editingBox, setTextBoxes, containerRef]);
 
   return (
     <div
       ref={boxRef}
-      className={`editable-textbox text-box absolute items-center  shadow bg-white rounded-sm ${
+      className={`editable-textbox text-box absolute items-center shadow bg-white rounded-sm ${
         selectedBox === index ? "ring-2 ring-blue-500" : ""
       }`}
       style={{
-        left: box.xPercent,
-        top: box.yPercent,
-        x: box.x,
-        y: box.y,
-        rotation: box.rotation,
-        transformOrigin:
-          box.align === "left"
-            ? "left center"
-            : box.align === "right"
-            ? "right center"
-            : "center center",
+        left: `${(box.xPercent ?? 0.5) * 100}%`,
+        top: `${(box.yPercent ?? 0.5) * 100}%`,
+        transform: `translate(-50%, -50%) rotate(${box.rotation || 0}deg)`,
+        transformOrigin: "center center",
         cursor: editingBox === index ? "text" : "move",
         zIndex: selectedBox === index ? 20 : 10,
+        willChange: "transform",
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -548,20 +522,18 @@ const DraggableBox = ({
           value={box.text}
           onChange={(e) => handleChange(index, e.target.value)}
           onBlur={() => handleEditComplete(index)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleEditComplete(index);
-            }
-          }}
+          onKeyDown={(e) => e.key === "Enter" && handleEditComplete(index)}
           autoFocus
-          className="outline-none bg-transparent border-none p-0 "
+          className="outline-none bg-transparent border-none p-0"
           style={{
             fontSize: `${box.size}px`,
             fontWeight: box.bold ? "bold" : "normal",
             color: box.color,
             minWidth: "200px",
             maxWidth: "360px",
-            border: "none",
+            fontFamily: box.font || "Arial",
+            fontStyle: box.italic ? "italic" : "normal",
+            textDecoration: box.textDecoration ? "underline" : "",
           }}
           onMouseDown={(e) => e.stopPropagation()}
         />
@@ -571,16 +543,14 @@ const DraggableBox = ({
             className="title"
             style={{
               fontWeight: box.bold ? "bold" : "normal",
+              fontSize: `${box.size}px`,
               color: box.color,
-              display: "block",
-              minWidth: "100%",
-              padding: "2px",
-              // fontSize: `${box.size}px`,
               textAlign: box.align,
               fontFamily: box.font || "Arial",
-              border: "none",
               fontStyle: box.italic ? "italic" : "normal",
               textDecoration: box.textDecoration ? "underline" : "",
+              display: "block",
+              padding: "2px",
             }}
           >
             {box.text}
@@ -592,7 +562,7 @@ const DraggableBox = ({
         <div className="edit-button-group">
           <div className="btn-edit">
             <button
-              className="rotate-btn  flex items-center bg-green-500 hover:bg-green-600 text-white p-1 rounded cursor-grab active:cursor-grabbing transition-colors"
+              className="rotate-btn flex items-center bg-green-500 hover:bg-green-600 text-white p-1 rounded cursor-grab active:cursor-grabbing transition-colors"
               title="Rotate"
             >
               <RotateCw className="scale-icon" />
@@ -606,9 +576,7 @@ const DraggableBox = ({
                   opacity: 0,
                   scale: 0,
                   duration: 0.2,
-                  onComplete: () => {
-                    handleDelete(box.id);
-                  },
+                  onComplete: () => handleDelete(box.id),
                 });
               }}
               className="flex items-center bg-red-500 hover:bg-red-600 text-white p-1 rounded transition-colors"
@@ -623,7 +591,7 @@ const DraggableBox = ({
                 e.stopPropagation();
                 setShowEditor(true);
               }}
-              className=" flex items-center bg-blue-500 hover:bg-blue-600 text-white p-1 rounded transition-colors"
+              className="flex items-center bg-blue-500 hover:bg-blue-600 text-white p-1 rounded transition-colors"
               title="Edit Style"
             >
               <Edit3 className="scale-icon" />

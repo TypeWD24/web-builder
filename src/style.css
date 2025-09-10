@@ -18,8 +18,8 @@
   display: flex;
   align-item: center;
   padding: 0 0.75rem 0 0.75rem;
-  left: var(--offset-x);
-  top: var(--offset-y);
+  /* left: var(--offset-x);
+  top: var(--offset-y); */
   position: absolute;
 }
 .editable-textbox .edit-button-group {
