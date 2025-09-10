@@ -1,5 +1,6 @@
 import { gsap } from "gsap";
 import { Draggable } from "gsap/Draggable";
+import { toPng } from "html-to-image";
 import {
   AlignCenter,
   AlignLeft,
@@ -9,7 +10,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import "./index.css";
+// import "./index.css";
+import "./style.css";
 
 gsap.registerPlugin(Draggable);
 
@@ -19,7 +21,18 @@ export default function App() {
   const [showEditor, setShowEditor] = useState(false);
   const [editingBox, setEditingBox] = useState(null);
 
+  const [vw, setVw] = useState(0);
+  useEffect(() => {
+    const onResize = () => setVw(window.innerWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  console.log("vw : ", vw);
+
   const containerRef = useRef(null);
+  const exportRef = useRef(null);
   const addTextBox = () => {
     const newIndex = textBoxes.length;
     let startX = 50;
@@ -63,8 +76,6 @@ export default function App() {
   const handleDelete = (id) => {
     setTextBoxes((prev) => prev.filter((box) => box.id !== id));
     if (selectedBox === id) setSelectedBox(null);
-    console.log("delte : ");
-    
     setShowEditor(false);
   };
 
@@ -92,20 +103,20 @@ export default function App() {
     setEditingBox(null);
   };
 
-  // const handleExport = () => {
-  //   if (!containerRef.current) return;
+  const handleExport = () => {
+    if (!exportRef.current) return;
 
-  //   toPng(containerRef.current, { cacheBust: true })
-  //     .then((dataUrl) => {
-  //       const link = document.createElement("a");
-  //       link.download = "exported-image.png";
-  //       link.href = dataUrl;
-  //       link.click();
-  //     })
-  //     .catch((err) => {
-  //       console.error("Export failed", err);
-  //     });
-  // };
+    toPng(exportRef.current, { cacheBust: true })
+      .then((dataUrl) => {
+        const link = document.createElement("a");
+        link.download = "exported-image.png";
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        console.error("Export failed", err);
+      });
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -128,40 +139,82 @@ export default function App() {
     <div className="h-screen grid grid-cols-12">
       <div
         ref={containerRef}
-        className="col-span-9 bg-gray-200 relative overflow-hidden flex justify-center items-center"
+        className="col-span-10 bg-gray-200 relative overflow-hidden flex justify-center items-center"
         style={{ userSelect: "none" }}
       >
-        <img
-          src="/asset/img/formater.jpg"
-          alt="Main"
-          className="h-full object-contain max-h-screen"
-          draggable={false}
-        />
-
-        {textBoxes.map((box, index) => (
-          <DraggableBox
-            key={index}
-            index={index}
-            box={box}
-            selectedBox={selectedBox}
-            editingBox={editingBox}
-            containerRef={containerRef}
-            handleDelete={handleDelete}
-            handleChange={handleChange}
-            handleDoubleClick={handleDoubleClick}
-            handleEditComplete={handleEditComplete}
-            handleSelectBox={(idx) => setSelectedBox(idx)}
-            setTextBoxes={setTextBoxes}
-            setShowEditor={setShowEditor}
+        <div
+          ref={exportRef}
+          className="relative inline-block builder-container"
+        >
+          <img
+            src="/asset/img/formater.jpg"
+            alt="Main"
+            className="h-full max-h-screen"
+            draggable={false}
           />
-        ))}
+          {textBoxes.map((box, index) => (
+            <DraggableBox
+              key={index}
+              index={index}
+              box={box}
+              selectedBox={selectedBox}
+              editingBox={editingBox}
+              containerRef={containerRef}
+              handleDelete={handleDelete}
+              handleChange={handleChange}
+              handleDoubleClick={handleDoubleClick}
+              handleEditComplete={handleEditComplete}
+              handleSelectBox={(idx) => setSelectedBox(idx)}
+              setTextBoxes={setTextBoxes}
+              setShowEditor={setShowEditor}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="col-span-2 bg-white flex flex-col justify-start pt-4 px-0">
+        <div className="flex justify-center items-center">
+          <button
+            onClick={addTextBox}
+            className="py-2.5 px-5 mb-4 text-sm font-medium text-gray-900
+            bg-white rounded-full border border-gray-300
+            hover:bg-gray-100 hover:text-blue-700
+            focus:outline-none focus:ring-2 focus:ring-blue-300
+            transition-colors w-50"
+          >
+            Add Textbox
+          </button>
+        </div>
 
-        {showEditor && selectedBox !== null && (
-          <div className="editor-popup absolute top-20 left-20 bg-white p-6 border border-gray-200 shadow-xl rounded-xl z-50 w-72">
-            <h3 className="font-bold mb-4 text-gray-700 text-lg">
-              Edit Text Style
-            </h3>
-
+        <div className="border-gray-400 border-b-1">
+          <div className="text-xs text-gray-600 px-4 text-start mb-4">
+            <p className="mb-2">
+              🖱️ <strong>Click</strong> to select
+            </p>
+            <p className="mb-2">
+              🖱️ <strong>Double-click</strong> to edit text
+            </p>
+            <p className="mb-2">
+              🎯 <strong>Drag</strong> to move
+            </p>
+            <p>
+              🔄 <strong>Green button</strong> to rotate
+            </p>
+          </div>
+        </div>
+        <div className="border-gray-400 border-b-1 flex justify-center items-center p-6">
+          <button
+            onClick={() => {
+              setShowEditor(false);
+              setSelectedBox(null);
+              handleExport();
+            }}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+          >
+            Export as PNG
+          </button>
+        </div>
+        {showEditor && selectedBox !== null && textBoxes[selectedBox] && (
+          <div className="editor-popup bg-white p-6 rounded-xl z-50">
             <div className="flex flex-col space-y-4">
               <label className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-600">
@@ -249,13 +302,6 @@ export default function App() {
                 />
               </label>
 
-              {/* <button
-                onClick={handleExport}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
-              >
-                Export as PNG
-              </button> */}
-
               <label className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-600">Font:</span>
                 <select
@@ -284,7 +330,7 @@ export default function App() {
                 <span className="text-sm font-medium text-gray-600 mb-2">
                   Align:
                 </span>
-                <div className="flex justify-between space-x-2">
+                <div className="flex justify-between space-x-2 flex-1">
                   <button
                     onClick={() => handleStyleChange("align", "left")}
                     className={`flex items-center justify-center flex-1 p-2 rounded border ${
@@ -328,38 +374,6 @@ export default function App() {
           </div>
         )}
       </div>
-
-      <div className="col-span-3 bg-white flex flex-col justify-start pt-4 px-0">
-        <div className=" flex justify-center items-center">
-          <button
-            onClick={addTextBox}
-            className="py-2.5 px-5 mb-4 text-sm font-medium text-gray-900
-            bg-white rounded-full border border-gray-300
-            hover:bg-gray-100 hover:text-blue-700
-            focus:outline-none focus:ring-2 focus:ring-blue-300
-            transition-colors w-50"
-          >
-            Add Textbox
-          </button>
-        </div>
-
-        <div className="border-gray-400 border-b-1">
-          <div className="text-xs text-gray-600 px-4 text-start mb-4">
-            <p className="mb-2">
-              🖱️ <strong>Click</strong> to select
-            </p>
-            <p className="mb-2">
-              🖱️ <strong>Double-click</strong> to edit text
-            </p>
-            <p className="mb-2">
-              🎯 <strong>Drag</strong> to move
-            </p>
-            <p>
-              🔄 <strong>Green button</strong> to rotate
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -397,7 +411,7 @@ const DraggableBox = ({
       },
       onDragStart: function () {
         gsap.to(this.target, {
-          scale: 1.1,
+          scale: 1.05,
           boxShadow: "0 8px 16px rgba(0,0,0,0.3)",
           duration: 0.2,
         });
@@ -455,12 +469,12 @@ const DraggableBox = ({
   return (
     <div
       ref={boxRef}
-      className={`text-box absolute p-2 border shadow bg-white rounded-sm ${
+      className={`editable-textbox text-box absolute items-center  shadow bg-white rounded-sm ${
         selectedBox === index ? "ring-2 ring-blue-500" : ""
       }`}
       style={{
-        left: 0,
-        top: 0,
+        // left: 10,
+        // top: 10,
         x: box.x,
         y: box.y,
         rotation: box.rotation,
@@ -490,72 +504,81 @@ const DraggableBox = ({
             }
           }}
           autoFocus
-          className="outline-none bg-transparent border-none p-0"
+          className="outline-none bg-transparent border-none p-0 "
           style={{
             fontSize: `${box.size}px`,
             fontWeight: box.bold ? "bold" : "normal",
             color: box.color,
             minWidth: "200px",
+            maxWidth: "360px",
             border: "none",
           }}
           onMouseDown={(e) => e.stopPropagation()}
         />
       ) : (
-        <span
-          style={{
-            fontSize: `${box.size}px`,
-            fontWeight: box.bold ? "bold" : "normal",
-            color: box.color,
-            display: "block",
-            minWidth: "200px",
-            padding: "2px",
-            textAlign: box.align,
-            fontFamily: box.font || "Arial",
-            border: "none",
-            fontStyle: box.italic ? "italic" : "normal",
-            textDecoration: box.textDecoration ? "underline" : "",
-          }}
-        >
-          {box.text}
-        </span>
+        <div className="editable-title items-center">
+          <span
+            className="title"
+            style={{
+              fontWeight: box.bold ? "bold" : "normal",
+              color: box.color,
+              display: "block",
+              minWidth: "100%",
+              padding: "2px",
+              // fontSize: `${box.size}px`,
+              textAlign: box.align,
+              fontFamily: box.font || "Arial",
+              border: "none",
+              fontStyle: box.italic ? "italic" : "normal",
+              textDecoration: box.textDecoration ? "underline" : "",
+            }}
+          >
+            {box.text}
+          </span>
+        </div>
       )}
 
       {selectedBox === index && editingBox !== index && (
-        <div className="absolute -top-10 right-0 flex space-x-1 z-50">
-          <button
-            className="rotate-btn bg-green-500 hover:bg-green-600 text-white p-1 rounded cursor-grab active:cursor-grabbing transition-colors"
-            title="Rotate"
-          >
-            <RotateCw size={14} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              gsap.to(boxRef.current, {
-                opacity: 0,
-                scale: 0,
-                duration: 0.2,
-                onComplete: () => {
-                  handleDelete(box.id);
-                },
-              });
-            }}
-            className="bg-red-500 hover:bg-red-600 text-white p-1 rounded transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={14} />
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowEditor(true);
-            }}
-            className="bg-blue-500 hover:bg-blue-600 text-white p-1 rounded transition-colors"
-            title="Edit Style"
-          >
-            <Edit3 size={14} />
-          </button>
+        <div className="edit-button-group">
+          <div className="btn-edit">
+            <button
+              className="rotate-btn  flex items-center bg-green-500 hover:bg-green-600 text-white p-1 rounded cursor-grab active:cursor-grabbing transition-colors"
+              title="Rotate"
+            >
+              <RotateCw className="scale-icon" />
+            </button>
+          </div>
+          <div className="btn-edit">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                gsap.to(boxRef.current, {
+                  opacity: 0,
+                  scale: 0,
+                  duration: 0.2,
+                  onComplete: () => {
+                    handleDelete(box.id);
+                  },
+                });
+              }}
+              className="flex items-center bg-red-500 hover:bg-red-600 text-white p-1 rounded transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="scale-icon" />
+            </button>
+          </div>
+          <div className="btn-edit">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEditor(true);
+              }}
+              className=" flex items-center bg-blue-500 hover:bg-blue-600 text-white p-1 rounded transition-colors"
+              title="Edit Style"
+            >
+              <Edit3 className="scale-icon" />
+            </button>
+          </div>
         </div>
       )}
     </div>

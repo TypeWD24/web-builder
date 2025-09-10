@@ -1,0 +1,72 @@
+:root {
+  --scale: 1;
+}
+:root {
+  --offset-x: 0px;
+  --offset-y: 0px;
+}
+.builder-container {
+  width: calc(32rem * var(--scale));
+  height: calc(100vh * var(--scale));
+  display : flex;
+  align-item:center;
+  justifyi-content:center;
+}
+.editable-textbox {
+  width: calc(12rem * var(--scale));
+  height: calc(2.5rem * var(--scale));
+  display: flex;
+  align-item: center;
+  padding: 0 0.75rem 0 0.75rem;
+  left: var(--offset-x);
+  top: var(--offset-y);
+  position: absolute;
+}
+.editable-textbox .edit-button-group {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  display: flex;
+  right: 0;
+  justify-content: end;
+}
+.editable-title {
+  display: flex;
+  width: 100%;
+}
+.editable-title .title {
+  font-size: calc(0.9375rem * var(--scale));
+}
+.btn-edit {
+  margin-left: 0.25rem;
+}
+.btn-edit button {
+  width: calc(2rem * var(--scale));
+  height: calc(2rem * var(--scale));
+  display: flex;
+  align-item: center;
+  justify-content: center;
+}
+.scale-icon {
+  width: calc(1.35rem * var(--scale));
+  height: calc(1.35rem * var(--scale));
+}
+@media screen and (max-width: 620.98px) {
+  :root {
+    --scale: 0.5;
+  }
+}
+@media screen and (max-width: 320.98px) {
+  :root {
+    --scale: 0.3;
+  }
+}
+/* @media screen and (max-height: 700px) {
+  :root {
+    --scale: 0.5;
+  }
+}
+@media screen and (max-height: 500px) {
+  :root {
+    --scale: 0.3;
+  }
+} */
