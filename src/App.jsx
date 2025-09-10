@@ -28,32 +28,53 @@ export default function App() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-
   console.log("vw : ", vw);
 
   const containerRef = useRef(null);
   const exportRef = useRef(null);
+
+  useEffect(() => {
+    const boundsEl =
+      containerRef.current?.querySelector("img") || containerRef.current;
+    if (!boundsEl) return;
+
+    const W = boundsEl.clientWidth || 1;
+    const H = boundsEl.clientHeight || 1;
+
+    setTextBoxes((prev) =>
+      prev.map((b) => {
+        const xPct = b.xPercent ?? (b.x != null ? b.x / W : 0);
+        const yPct = b.yPercent ?? (b.y != null ? b.y / H : 0);
+        return {
+          ...b,
+          x: xPct * W,
+          y: yPct * H,
+          xPercent: xPct,
+          yPercent: yPct,
+        };
+      })
+    );
+  }, [vw, containerRef]);
+
   const addTextBox = () => {
-    const newIndex = textBoxes.length;
+    const xPercent = 0.4;
+    const yPercent = 0.4;
+
     let startX = 50;
     let startY = 50;
 
     const container = containerRef.current;
     if (container) {
-      const imageArea = container.querySelector("img");
-      if (imageArea) {
-        const containerRect = container.getBoundingClientRect();
-        const imageRect = imageArea.getBoundingClientRect();
+      const boundsEl = container.querySelector("img") || container;
 
-        const relativeImageRect = {
-          left: imageRect.left - containerRect.left,
-          top: imageRect.top - containerRect.top,
-          width: imageRect.width,
-          height: imageRect.height,
-        };
-        startX = relativeImageRect.left + relativeImageRect.width * 0.4;
-        startY = relativeImageRect.top + relativeImageRect.height * 0.4;
-      }
+      const c = container.getBoundingClientRect();
+      const b = boundsEl.getBoundingClientRect();
+
+      const left = b.left - c.left;
+      const top = b.top - c.top;
+
+      startX = left + b.width * xPercent;
+      startY = top + b.height * yPercent;
     }
 
     const newBox = {
@@ -62,12 +83,14 @@ export default function App() {
       color: "#000000",
       size: 16,
       bold: false,
-      x: startX,
-      y: startY,
       rotation: 0,
       align: "left",
       font: "Arial",
       fontStyle: "normal",
+      xPercent,
+      yPercent,
+      x: startX,
+      y: startY,
     };
 
     setTextBoxes((prev) => [...prev, newBox]);
@@ -416,16 +439,41 @@ const DraggableBox = ({
           duration: 0.2,
         });
       },
+      // onDragEnd: function () {
+      //   gsap.to(this.target, {
+      //     scale: 1,
+      //     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+      //     duration: 0.2,
+      //   });
+      //   const finalX = this.x;
+      //   const finalY = this.y;
+      //   setTextBoxes((prev) =>
+      //     prev.map((b, i) => (i === index ? { ...b, x: finalX, y: finalY } : b))
+      //   );
+      // },
       onDragEnd: function () {
         gsap.to(this.target, {
           scale: 1,
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
           duration: 0.2,
         });
-        const finalX = this.x;
-        const finalY = this.y;
+        const container = containerRef.current;
+        const boundsEl = container.querySelector("img") || container;
+        const c = container.getBoundingClientRect();
+        const b = boundsEl.getBoundingClientRect();
+        const left = b.left - c.left;
+        const top = b.top - c.top;
+
+        const xPx = this.x;
+        const yPx = this.y;
+
+        const xPercent = (xPx - left) / b.width;
+        const yPercent = (yPx - top) / b.height;
+
         setTextBoxes((prev) =>
-          prev.map((b, i) => (i === index ? { ...b, x: finalX, y: finalY } : b))
+          prev.map((box, i) =>
+            i === index ? { ...box, xPercent, yPercent, x: xPx, y: yPx } : box
+          )
         );
       },
       onClick: (e) => {
@@ -466,6 +514,8 @@ const DraggableBox = ({
     };
   }, [box, index, editingBox, setTextBoxes]);
 
+  console.log("Box", box);
+
   return (
     <div
       ref={boxRef}
@@ -473,8 +523,8 @@ const DraggableBox = ({
         selectedBox === index ? "ring-2 ring-blue-500" : ""
       }`}
       style={{
-        // left: 10,
-        // top: 10,
+        left: box.xPercent,
+        top: box.yPercent,
         x: box.x,
         y: box.y,
         rotation: box.rotation,
