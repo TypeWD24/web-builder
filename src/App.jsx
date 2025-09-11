@@ -10,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-// import "./index.css";
+import "./index.css";
 import "./style.css";
 
 gsap.registerPlugin(Draggable);
@@ -196,7 +196,12 @@ export default function App() {
         </div>
       </div>
       <div className="col-span-2 bg-white flex flex-col justify-start pt-4 px-0">
-        <div className="flex justify-center items-center">
+        <div
+          className="flex justify-center items-center"
+          style={{
+            padding: "6px",
+          }}
+        >
           <button
             onClick={addTextBox}
             className="py-2.5 px-5 mb-4 text-sm font-medium text-gray-900
@@ -209,7 +214,13 @@ export default function App() {
           </button>
         </div>
 
-        <div className="border-gray-400 border-b-1">
+        <div
+          className="border-gray-400 border-b-1 gap-4 p-6"
+          style={{
+            padding: "6px",
+            marginBottom: "4px",
+          }}
+        >
           <div className="text-xs text-gray-600 px-4 text-start mb-4">
             <p className="mb-2">
               🖱️ <strong>Click</strong> to select
@@ -225,7 +236,12 @@ export default function App() {
             </p>
           </div>
         </div>
-        <div className="border-gray-400 border-b-1 flex justify-center items-center p-6">
+        <div
+          className="border-gray-400 border-b-1 flex justify-center items-center p-6"
+          style={{
+            padding: "6px",
+          }}
+        >
           <button
             onClick={() => {
               setShowEditor(false);
@@ -414,7 +430,7 @@ const DraggableBox = ({
   handleSelectBox,
   setTextBoxes,
   setShowEditor,
-  vw
+  vw,
 }) => {
   const boxRef = useRef(null);
 
@@ -466,6 +482,9 @@ const DraggableBox = ({
       onClick: (e) => e.stopPropagation(),
     })[0];
 
+    console.log("el : ", el.querySelector(".rotate-btn"));
+    console.log("el 5555: ", el);
+
     const rotateBtn = el.querySelector(".rotate-btn");
     let rot = null;
     if (rotateBtn) {
@@ -495,7 +514,12 @@ const DraggableBox = ({
       main.kill();
       if (rot) rot.kill();
     };
-  }, [index, editingBox, setTextBoxes, containerRef]);
+  }, [index, editingBox, setTextBoxes, containerRef, selectedBox]);
+
+  const scale = vw <= 320.98 ? 0.3 : vw <= 620.98 ? 0.5 : 1;
+
+  const fontSizePx = Math.max(0, Math.round((box.size || 16) * scale));
+  console.log("fontSizePx : ", fontSizePx);
 
   return (
     <div
@@ -507,7 +531,12 @@ const DraggableBox = ({
         left: `${(box.xPercent ?? 0.5) * 100}%`,
         top: `${(box.yPercent ?? 0.5) * 100}%`,
         transform: `translate(-50%, -50%) rotate(${box.rotation || 0}deg)`,
-        transformOrigin: "center center",
+        transformOrigin:
+          box.align === "left"
+            ? "left center"
+            : box.align === "right"
+            ? "right center"
+            : "center center",
         cursor: editingBox === index ? "text" : "move",
         zIndex: selectedBox === index ? 20 : 10,
         willChange: "transform",
@@ -544,12 +573,7 @@ const DraggableBox = ({
             className="title"
             style={{
               fontWeight: box.bold ? "bold" : "normal",
-              fontSize:
-                vw <= 620.98
-                  ? box.size * 0.5
-                  : vw <= 320.98
-                  ? box.size * 0.3
-                  : box.size,
+              fontSize: fontSizePx,
               color: box.color,
               textAlign: box.align,
               fontFamily: box.font || "Arial",
