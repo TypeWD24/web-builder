@@ -414,6 +414,7 @@ const DraggableBox = ({
   handleSelectBox,
   setTextBoxes,
   setShowEditor,
+  vw
 }) => {
   const boxRef = useRef(null);
 
@@ -543,7 +544,12 @@ const DraggableBox = ({
             className="title"
             style={{
               fontWeight: box.bold ? "bold" : "normal",
-              fontSize: `${box.size}px`,
+              fontSize:
+                vw <= 620.98
+                  ? box.size * 0.5
+                  : vw <= 320.98
+                  ? box.size * 0.3
+                  : box.size,
               color: box.color,
               textAlign: box.align,
               fontFamily: box.font || "Arial",
